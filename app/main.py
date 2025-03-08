@@ -18,21 +18,14 @@ fake_db = {
 # Página de inicio (Login)
 @app.get("/", response_class=HTMLResponse)
 async def login_page():
-    # Servimos el archivo estático del login
-    with open("static/index.html", "r") as file:
+    with open("static/index.html", "r", encoding="utf-8") as file:
         return HTMLResponse(content=file.read())
 
 # Procesamos el login
 @app.post("/login")
 async def login(username: str = Form(...), password: str = Form(...)):
-    # Validamos el usuario y la contraseña
     if username in fake_db and fake_db[username]["password"] == password:
         user_product = fake_db[username]["product"]
-        # Redirigimos a la página correspondiente dependiendo del producto
-        if user_product == "producto1":
-            return RedirectResponse(url="/static/panel-producto1.html")
-        elif user_product == "producto2":
-            return RedirectResponse(url="/static/panel-producto2.html")
-        elif user_product == "producto3":
-            return RedirectResponse(url="/static/panel-producto3.html")
+        return RedirectResponse(url=f"/static/panel-{user_product}.html", status_code=303)
+    
     return HTMLResponse(content="Login failed", status_code=401)

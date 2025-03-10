@@ -16,13 +16,17 @@ fake_db = {
     "user3": {"password": "pass789", "product": "producto3"},
 }
 
-# Clase para el formato de datos del ADC
+# Clase para los datos enviados por el ESP32
 class ADCData(BaseModel):
+    esp_id: str
     adc_value: float
 
-# Simulamos un valor en memoria para el ADC
-adc_data = ADCData(adc_value=0.0)
-
+# Diccionario en memoria para almacenar los valores de ADC de cada ESP32
+adc_data = {
+    "esp1": 0.0,
+    "esp2": 0.0,
+    "esp3": 0.0
+}
 
 # Página de inicio (Login)
 @app.get("/", response_class=HTMLResponse)
@@ -42,14 +46,19 @@ async def login(username: str = Form(...), password: str = Form(...)):
 # Endpoint para recibir datos del ADC (POST)
 @app.post("/api/adc")
 async def receive_adc_data(data: ADCData):
-    # Guardar el valor del ADC
-    adc_data.adc_value = data.adc_value  # Actualizamos el valor en memoria
-    print(f"Valor del ADC recibido: {adc_data.adc_value}")
+    # Guardamos el valor del ADC para el ESP correspondiente
+    if data.esp_id in adc_data:
+        adc_data[data.esp_id] = data.adc_value
+        print(f"Valor del ADC recibido de {data.esp_id}: {data.adc_value}")
+        return {"status": "success", "esp_id": data.esp_id, "adc_value": data.adc_value}
+    
+    return {"status": "error", "message": "ESP ID no válido"}
 
-    return {"status": "success", "adc_value": adc_data.adc_value}
+# Endpoint para obtener el valor del ADC de un ESP específico (GET)
+@app.get("/api/adc/{esp_id}")
+async def get_adc_value(esp_id: str):
+    if esp_id in adc_data:
+        return {"esp_id": esp_id, "adc_value": adc_data[esp_id]}
+    
+    return {"status": "error", "message": "ESP ID no válido"}
 
-# Endpoint para obtener el valor del ADC (GET)
-@app.get("/api/adc", response_model=ADCData)
-async def get_adc_value():
-    # Regresamos el valor actual del ADC
-    return adc_data

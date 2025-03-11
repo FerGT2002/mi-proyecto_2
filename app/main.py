@@ -37,6 +37,9 @@ async def login_page():
 # Procesamos el login
 @app.post("/login")
 async def login(username: str = Form(...), password: str = Form(...)):
+    # Imprime los datos del formulario para depuración
+    print(f"Datos recibidos - Usuario: {username}, Contraseña: {password}")
+    
     if username in fake_db and fake_db[username]["password"] == password:
         user_product = fake_db[username]["product"]
         return RedirectResponse(url=f"/static/panel-{user_product}.html", status_code=303)
@@ -61,5 +64,3 @@ async def get_adc_value(esp_id: str):
         return {"esp_id": esp_id, "adc_value": adc_data[esp_id]}
     
     return {"status": "error", "message": "ESP ID no válido"}
-
-

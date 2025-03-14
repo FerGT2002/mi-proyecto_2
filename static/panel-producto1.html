@@ -4,28 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Producto 1 Panel</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            font-size: 22px;
+            color: #333;
+        }
+
+        .adc-container {
+            font-size: 24px;
+            font-weight: bold;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #1E90FF;
+            color: white;
+            display: inline-block;
+        }
+
+        .led-button {
+            margin-top: 20px;
+        }
+        canvas {
+            margin-top: 20px;
+            width: 100% !important;
+            height: auto !important;
+        }
+    </style>
 </head>
 <body>
-    <h2>Bienvenido al Panel de Producto 1</h2>
-    <p>Valor del ADC: <span id="adc-value">Esperando...</span></p>
+    <div class="container">
+        <h1>ESP32 Data Logger1</h1>
+        <div class="adc-container">
+            Voltaje: <span id="adc-value">0.00 V</span>
+        </div>
+        <br>
+        <canvas id="adcChart"></canvas> <!-- Canvas para la gráfica -->
+    </div>
 
     <script>
+
+        let labels = [];  // Etiquetas de tiempo
+        let adcData = []; // Datos de voltaje del ADC
+
         // Función para obtener el valor del ADC desde el servidor
         async function fetchADCValue() {
             try {
                 const response = await fetch("/api/adc/esp1");  // Solicitar el valor del ADC
                 const data = await response.json();
                 document.getElementById('adc-value').innerText = data.adc_value;  // Mostrar el valor en la página
+                  // Agregar datos a la gráfica
+                    adcData.push(data.adc_value);
+                    labels.push(labels.length + 1); // Agregar nuevo punto de tiempo
+
+                     // Limitar a los últimos 20 valores
+                     if (adcData.length > 35) {
+                        adcData.shift();
+                        labels.pop();
+                    }
+
+                     console.log(adcData)
+                    // Actualizar la gráfica
+                    adcChart.update();
             } catch (error) {
                 console.error("Error al obtener el valor del ADC:", error);
             }
         }
 
         // Actualizar el valor del ADC cada 2 segundos
-        setInterval(fetchADCValue, 1000);
+        setInterval(fetchADCValue, 2000);
 
         // Llamar a la función inicialmente para cargar el valor al inicio
         fetchADCValue();
+
+
+        window.onload = function() {
+            const ctx = document.getElementById('adcChart').getContext('2d');
+            window.adcChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Voltaje del ADC (V)',
+                        data: adcData,
+                        borderColor: 'rgb(75, 192, 192)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: true,
+                        tension: 0.5
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tiempo'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Voltaje (V)'
+                            },
+                            min: 0, // Ajusta según el rango esperado
+                            max: 22
+                        }
+                    }
+                }
+            });
+        };
     </script>
 </body>
 </html>
